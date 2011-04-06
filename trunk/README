@@ -1,0 +1,5 @@
+requires python 2.7+
+
+lauch bibix and type help
+
+tocks-bibix-launcher is for proxying into a machine that has full access to ACM Portal / IEEE Xplore so you can download papers easily
