@@ -324,26 +324,33 @@ def loadallpdfs():
   print "loaded",len(current_list),"entries";
 
 prompt=[0];
+
+def match(inp, l):
+  for i in l:
+    if(inp==i): return 1;
+  return 0;
+
+
 while(prompt[0]!='q' and prompt[0]!='quit'):
   prompt=raw_input("--> ").split();
   if(not len(prompt)): prompt=[0];
-  if(prompt[0]=="import" or prompt[0]=="i"): import_bib();
-  if(prompt[0]=="search" or prompt[0]=="s"): search();
-  if(prompt[0]=="display" or prompt[0]=="d"): display('short');
-  if(prompt[0]=="displaybib" or prompt[0]=="dbib"): display('full');
-  if(prompt[0]=="quickdisplay" or prompt[0]=="qd"): display('quick');
-  if(prompt[0]=="download" or prompt[0]=="dl"): download();
-  if(prompt[0]=="acmdownload" or prompt[0]=="adl"): acmdownload();
-  if(prompt[0]=="open" or prompt[0]=="o"): open_entry();
-  if(prompt[0]=="refine" or prompt[0]=="r"): refine();
-  if(prompt[0]=="eliminate" or prompt[0]=="elim"): eliminate();
-  if(prompt[0]=="showlists" or prompt[0]=="show"): showlists();
-  if(prompt[0]=="loadlist" or prompt[0]=="load"): loadlist();
-  if(prompt[0]=="createlist" or prompt[0]=="create"): createlist();
-  if(prompt[0]=="deletelist" or prompt[0]=="del"): deletelist();
-  if(prompt[0]=="addtolist" or prompt[0]=="add"): addtolist();
-  if(prompt[0]=="removeitem" or prompt[0]=="ri"): removeitem();
-  if(prompt[0]=="loadallpdfs" or prompt[0]=="pdfs"): loadallpdfs();
-  if(prompt[0]=="info"): info();
+  if(match(prompt[0],["import","i"])): import_bib();
+  if(match(prompt[0],["search","s"])): search();
+  if(match(prompt[0],["display","d"])): display('short');
+  if(match(prompt[0],["displaybib","dbib"])): display('full');
+  if(match(prompt[0],["quickdisplay","qd"])): display('quick');
+  if(match(prompt[0],["download","dl"])): download();
+  if(match(prompt[0],["acmdownload","adl"])): acmdownload();
+  if(match(prompt[0],["open","o"])): open_entry();
+  if(match(prompt[0],["refine","r"])): refine();
+  if(match(prompt[0],["eliminate","elim"])): eliminate();
+  if(match(prompt[0],["showlists","show"])): showlists();
+  if(match(prompt[0],["loadlist","load"])): loadlist();
+  if(match(prompt[0],["createlist","create"])): createlist();
+  if(match(prompt[0],["deletelist","del"])): deletelist();
+  if(match(prompt[0],["addtolist","add"])): addtolist();
+  if(match(prompt[0],["removeitem","ri"])): removeitem();
+  if(match(prompt[0],["loadallpdfs","pdfs"])): loadallpdfs();
+  if(match(prompt[0],["info"])): info();
 
 main_db.close();
