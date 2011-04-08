@@ -335,7 +335,7 @@ while(prompt[0]!='q' and prompt[0]!='quit'):
   if(match(prompt[0],["search","s"])): search();
   if(match(prompt[0],["display","d"])): display('short');
   if(match(prompt[0],["displaybib","dbib"])): display('full');
-  if(match(prompt[0],["quickdisplay","qd"])): display('quick');
+  if(match(prompt[0],["quickdisplay","qd","ql"])): display('quick');
   if(match(prompt[0],["download","dl"])): download();
   if(match(prompt[0],["acmdownload","adl"])): acmdownload();
   if(match(prompt[0],["open","o"])): open_entry();
