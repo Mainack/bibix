@@ -352,5 +352,6 @@ while(prompt[0]!='q' and prompt[0]!='quit'):
   if(match(prompt[0],["removeitem","ri"])): removeitem();
   if(match(prompt[0],["loadallpdfs","pdfs"])): loadallpdfs();
   if(match(prompt[0],["info"])): info();
+  if(match(prompt[0],["help"])): showhelp();
 
 main_db.close();
