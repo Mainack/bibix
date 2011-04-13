@@ -1,20 +1,26 @@
 import shelve,string,sys,os,urllib2,platform;
 
+bibdb=dict();
 listdb=dict();
 current_list=[];
 
 def info():
-  print "size of bib database:\t",len(main_db.keys())-1;
+  print "size of bib database:\t",len(bibdb.keys());
 
 print "loading database...";
 main_db=shelve.open('paperbank');
-if(main_db.has_key('$lists')): listdb=main_db['$lists'];
-else: main_db['$lists']=listdb;
+if(main_db.has_key('paperbank')): bibdb=main_db['paperbank'];
+if(main_db.has_key('lists')): listdb=main_db['lists'];
 info();
 
+def save_db():
+  print "saving database...";
+  main_db['paperbank']=bibdb;
+  main_db['lists']=listdb;
+  main_db.sync();
+
 def save_lists():
-  print "saving lists...";
-  main_db['$lists']=listdb;
+  main_db['lists']=listdb;
   main_db.sync();
 
 def import_bib():
@@ -32,10 +38,10 @@ def import_bib():
     if(not len(i)): continue;
     i=i+'\n';
     if(i[0]=='@'):
-      if(cur_bib_info!=dict()): main_db[key]=[cur_bib.copy(), cur_bib_info.copy()]; 
+      if(cur_bib_info!=dict()): bibdb[key]=[cur_bib.copy(), cur_bib_info.copy()]; 
       cur_bib=dict(); cur_bib_info=dict(); 
       key=i.split('{')[1].split(',')[0];
-      if(main_db.has_key(key)): continue;
+      if(bibdb.has_key(key)): continue;
       cur_bib_info['type']=i[1:].split('{')[0];
       cur_bib_info['citekey']=i.split('{')[1].split(',')[0];
       cur_bib_info['has_pdf']='no';
@@ -46,8 +52,8 @@ def import_bib():
           cur_bib[i.split()[0]]=i.split(" = {")[1].split("},\n")[0];
         else:
           cur_bib[i.split()[0]]=i.split(" = {")[1].split("}\n")[0];
-  main_db[key]=[cur_bib.copy(), cur_bib_info.copy()]; #last one 
-  main_db.sync();
+  bibdb[key]=[cur_bib.copy(), cur_bib_info.copy()]; #last one 
+  save_db();
   info();
 
 def search():
@@ -56,8 +62,7 @@ def search():
   querys=prompt[1:];
   results=[];
   print "searching...";
-  for t,i in main_db.iteritems():
-    if(t=='$lists'): continue;
+  for i in bibdb.itervalues():
     total_rank=0; all_q=1;
     for q in querys:
       rank=rank_bib(i[0],q);
@@ -160,9 +165,9 @@ def download():
   f = opener.open(prompt[2]); pdf=f.read(); f.close();
   bibinfo['pdf_file']=pdf;
   bibinfo['has_pdf']='yes';
-  main_db[bibinfo['citekey']][1]=bibinfo; 
+  bibdb[bibinfo['citekey']][1]=bibinfo; 
   print "download complete";
-  main_db.sync();
+  save_db();
 
 def acmdownload():
   global current_list;
@@ -182,9 +187,9 @@ def acmdownload():
     f = opener.open("http://portal.acm.org/ft_gateway.cfm?id="+a_id+"&type=pdf"); pdf=f.read(); f.close();
     bibinfo['pdf_file']=pdf;
     bibinfo['has_pdf']='yes';
-    main_db[bibinfo['citekey']][1]=bibinfo; 
+    bibdb[bibinfo['citekey']][1]=bibinfo; 
   print "download complete";
-  main_db.sync();
+  save_db();
 
 def open_entry():
   global current_list;
@@ -204,8 +209,8 @@ def open_entry():
   if(savin=='yes'): 
     newpdf=open(fn,'rb').read(); 
     bibinfo['pdf_file']=newpdf;
-    main_db[bibinfo['citekey']][1]=bibinfo; 
-    main_db.sync();
+    bibdb[bibinfo['citekey']][1]=bibinfo; 
+    save_db();
   os.remove(fn);
 
 def refine():
@@ -234,17 +239,16 @@ def eliminate():
     doit=raw_input("--> are you sure you want to do this? ");
   if(doit!='yes'): return;
   trash=[];
-  for t,i in main_db.iteritems():
-    if(t=='$lists'): continue;
+  for i in bibdb.itervalues():
     if(i[0].has_key(prompt[1])):
       if(i[0][prompt[1]].split()==prompt[2:]):
         trash.append(i[1]['citekey']);
   for i in trash:
-    del main_db[i];
+    del bibdb[i];
     for j in listdb.iterkeys():
       listdb[j][:] = (value for value in listdb[j] if value != i)
   print "eliminated",len(trash),"entries";
-  main_db.sync();
+  save_db();
   current_list=[];
 
 def showlists():
@@ -257,7 +261,7 @@ def loadlist():
   if(not listdb.has_key(prompt[1])): return;
   current_list=[];
   for i in listdb[prompt[1]]:
-    current_list.append([0,main_db[i]]);
+    current_list.append([0,bibdb[i]]);
   print "loaded",len(listdb[prompt[1]]),"entries";
 
 def createlist():
@@ -313,8 +317,7 @@ def removeitem():
 def loadallpdfs():
   global current_list;
   current_list=[];
-  for t,i in main_db.itervalues():
-    if(t=='$lists'): continue;
+  for i in bibdb.itervalues():
     if(not i[1].has_key('has_pdf')): continue;
     if(i[1]['has_pdf']=="yes"):
       current_list.append([0,i]);
@@ -335,7 +338,7 @@ while(prompt[0]!='q' and prompt[0]!='quit'):
   if(match(prompt[0],["search","s"])): search();
   if(match(prompt[0],["display","d"])): display('short');
   if(match(prompt[0],["displaybib","dbib"])): display('full');
-  if(match(prompt[0],["quickdisplay","qd","ql"])): display('quick');
+  if(match(prompt[0],["quickdisplay","qd","ql","ls"])): display('quick');
   if(match(prompt[0],["download","dl"])): download();
   if(match(prompt[0],["acmdownload","adl"])): acmdownload();
   if(match(prompt[0],["open","o"])): open_entry();
@@ -349,6 +352,5 @@ while(prompt[0]!='q' and prompt[0]!='quit'):
   if(match(prompt[0],["removeitem","ri"])): removeitem();
   if(match(prompt[0],["loadallpdfs","pdfs"])): loadallpdfs();
   if(match(prompt[0],["info"])): info();
-  if(match(prompt[0],["help"])): showhelp();
 
 main_db.close();
