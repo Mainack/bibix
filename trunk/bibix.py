@@ -2,6 +2,7 @@ import shelve,string,sys,os,urllib2,platform;
 
 bibdb=dict();
 listdb=dict();
+pdfdb=dict();
 current_list=[];
 
 def info():
@@ -11,16 +12,22 @@ print "loading database...";
 main_db=shelve.open('paperbank');
 if(main_db.has_key('paperbank')): bibdb=main_db['paperbank'];
 if(main_db.has_key('lists')): listdb=main_db['lists'];
+if(main_db.has_key('pdfs')): pdfdb=main_db['pdfs'];
 info();
 
-def save_db():
+def save_bib():
   print "saving database...";
   main_db['paperbank']=bibdb;
-  main_db['lists']=listdb;
   main_db.sync();
 
 def save_lists():
+  print "saving lists...";
   main_db['lists']=listdb;
+  main_db.sync();
+
+def save_pdfs():
+  print "saving pdfs...";
+  main_db['pdfs']=pdfdb;
   main_db.sync();
 
 def import_bib():
@@ -44,7 +51,6 @@ def import_bib():
       if(bibdb.has_key(key)): continue;
       cur_bib_info['type']=i[1:].split('{')[0];
       cur_bib_info['citekey']=i.split('{')[1].split(',')[0];
-      cur_bib_info['has_pdf']='no';
       key=i.split('{')[1].split(',')[0];
     else:
       if(len(i.split("="))>1):
@@ -53,7 +59,7 @@ def import_bib():
         else:
           cur_bib[i.split()[0]]=i.split(" = {")[1].split("}\n")[0];
   bibdb[key]=[cur_bib.copy(), cur_bib_info.copy()]; #last one 
-  save_db();
+  save_bib();
   info();
 
 def search():
@@ -98,9 +104,9 @@ def display(type):
     else: print ;
     if(type=="short"): show_bib_summary(current_list[i][1][0]);
     if(type=="full"): show_bib_full(current_list[i][1][0]);
-    if(current_list[i][1][1]['has_pdf']=='yes'): 
+    if(pdfdb.has_key(current_list[i][1][1]['citekey'])): 
       print "*pdf",
-      filesize=sys.getsizeof(current_list[i][1][1]['pdf_file'])/(1024);
+      filesize=sys.getsizeof(pdfdb[current_list[i][1][1]['citekey']])/(1024);
       if(filesize<1024):
         print "("+str(filesize)+"kb)",
       else:
@@ -163,11 +169,31 @@ def download():
   opener.addheaders = [('User-agent', 'Mozilla/5.0')]
   print "downloading...";
   f = opener.open(prompt[2]); pdf=f.read(); f.close();
-  bibinfo['pdf_file']=pdf;
-  bibinfo['has_pdf']='yes';
-  bibdb[bibinfo['citekey']][1]=bibinfo; 
+  pdfdb[bibinfo['citekey']]=pdf;
   print "download complete";
-  save_db();
+  save_pdfs();
+
+def ieeedownload():
+  global current_list;
+  if(len(prompt)<2): return;
+  for i in prompt[1:]:
+    if(not is_int(i)): return;
+    if(int(i)<0 or int(i)>=len(current_list)): return;
+  for i in prompt[1:]:
+    entry=int(i);
+    bib=current_list[entry][1][0];
+    bibinfo=current_list[entry][1][1];
+    if(not bib.has_key('pdf_url')): print "no acmid feild";
+    url=bib['pdf_url'];
+    opener = urllib2.build_opener(urllib2.HTTPCookieProcessor())
+    opener.addheaders = [('User-agent', 'Mozilla/5.0')]
+    print "downloading",str(entry)+"...";
+    f = opener.open(url); pdf=f.read(); f.close();
+    url="http://ieeexplore.ieee.org/"+pdf.split("<frame src=\"http://ieeexplore.ieee.org/")[1].split('"')[0];
+    f = opener.open(url); pdf=f.read(); f.close();
+    pdfdb[bibinfo['citekey']]=pdf;
+  print "download complete";
+  save_pdfs();
 
 def acmdownload():
   global current_list;
@@ -185,11 +211,9 @@ def acmdownload():
     opener.addheaders = [('User-agent', 'Mozilla/5.0')]
     print "downloading",str(entry)+"...";
     f = opener.open("http://portal.acm.org/ft_gateway.cfm?id="+a_id+"&type=pdf"); pdf=f.read(); f.close();
-    bibinfo['pdf_file']=pdf;
-    bibinfo['has_pdf']='yes';
-    bibdb[bibinfo['citekey']][1]=bibinfo; 
+    pdfdb[bibinfo['citekey']]=pdf;
   print "download complete";
-  save_db();
+  save_pdfs();
 
 def open_entry():
   global current_list;
@@ -198,9 +222,9 @@ def open_entry():
   entry=int(prompt[1]);
   if(entry>=len(current_list) or entry<0): return; 
   bibinfo=current_list[entry][1][1];
-  if(bibinfo['has_pdf']!='yes'): print "no pdf"; return;
+  if(not pdfdb.has_key(bibinfo['citekey'])): print "no pdf"; return;
   fn='temp.pdf';
-  outfile=open(fn,'wb'); outfile.write(bibinfo['pdf_file']); outfile.close(); 
+  outfile=open(fn,'wb'); outfile.write(pdfdb[bibinfo['citekey']]); outfile.close(); 
   if(platform.system()=="Darwin"): os.system('open '+fn);
   else: os.system('evince '+fn);
   savin='';
@@ -208,9 +232,8 @@ def open_entry():
     savin=raw_input("--> would you like to save changes? ");
   if(savin=='yes'): 
     newpdf=open(fn,'rb').read(); 
-    bibinfo['pdf_file']=newpdf;
-    bibdb[bibinfo['citekey']][1]=bibinfo; 
-    save_db();
+    pdfdb[bibinfo['citekey']]=newpdf;
+    save_pdfs();
   os.remove(fn);
 
 def refine():
@@ -245,10 +268,12 @@ def eliminate():
         trash.append(i[1]['citekey']);
   for i in trash:
     del bibdb[i];
+    del pdfdb[i];
     for j in listdb.iterkeys():
       listdb[j][:] = (value for value in listdb[j] if value != i)
   print "eliminated",len(trash),"entries";
-  save_db();
+  save_bib();
+  save_pdfs();
   current_list=[];
 
 def showlists():
@@ -318,8 +343,8 @@ def loadallpdfs():
   global current_list;
   current_list=[];
   for i in bibdb.itervalues():
-    if(not i[1].has_key('has_pdf')): continue;
-    if(i[1]['has_pdf']=="yes"):
+    if(not pdfdb.has_key(i[1]['citekey'])): continue;
+    else:
       current_list.append([0,i]);
   print "loaded",len(current_list),"entries";
 
@@ -335,12 +360,13 @@ while(prompt[0]!='q' and prompt[0]!='quit'):
   prompt=raw_input("--> ").split();
   if(not len(prompt)): prompt=[0];
   if(match(prompt[0],["import","i"])): import_bib();
-  if(match(prompt[0],["search","s"])): search();
+  if(match(prompt[0],["search","find","s","f"])): search();
   if(match(prompt[0],["display","d"])): display('short');
   if(match(prompt[0],["displaybib","dbib"])): display('full');
   if(match(prompt[0],["quickdisplay","qd","ql","ls"])): display('quick');
   if(match(prompt[0],["download","dl"])): download();
   if(match(prompt[0],["acmdownload","adl"])): acmdownload();
+  if(match(prompt[0],["ieeedownload","idl"])): ieeedownload();
   if(match(prompt[0],["open","o"])): open_entry();
   if(match(prompt[0],["refine","r"])): refine();
   if(match(prompt[0],["eliminate","elim"])): eliminate();
