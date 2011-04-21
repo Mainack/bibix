@@ -60,7 +60,9 @@ for i in final:
     if len(j)<1: continue;
     if j[0]=="@": out.write(j); do_print=1; continue;
     if j[0]=="}": out.write(j+'\n'); do_print=0; continue;
-    if do_print: out.write(j);
+    if do_print: 
+      print j, 
+      out.write(j);
 
     
 out.close();
