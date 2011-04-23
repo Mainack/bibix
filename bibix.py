@@ -62,6 +62,25 @@ def import_bib():
   save_bib();
   info();
 
+def match_search():
+  global current_list;
+  if(len(prompt)<2): return;
+  querys=[prompt[1]];
+  for i in prompt[2:]: querys[0]+=' '+i;
+  results=[];
+  print "searching...";
+  for i in bibdb.itervalues():
+    total_rank=0; all_q=1;
+    for q in querys:
+      rank=rank_bib(i[0],q);
+      if(not rank): all_q=0; break;
+      total_rank+=rank;
+    if(all_q):
+      results.append([total_rank,i]);
+  results.sort(reverse=True);
+  print len(results),"total results found!";
+  current_list=results;
+
 def search():
   global current_list;
   if(len(prompt)<2): return;
@@ -268,7 +287,7 @@ def eliminate():
         trash.append(i[1]['citekey']);
   for i in trash:
     del bibdb[i];
-    del pdfdb[i];
+    if(pdfdb.has_key(i)): del pdfdb[i];
     for j in listdb.iterkeys():
       listdb[j][:] = (value for value in listdb[j] if value != i)
   print "eliminated",len(trash),"entries";
@@ -361,6 +380,7 @@ while(prompt[0]!='q' and prompt[0]!='quit'):
   if(not len(prompt)): prompt=[0];
   if(match(prompt[0],["import","i"])): import_bib();
   if(match(prompt[0],["search","find","s","f"])): search();
+  if(match(prompt[0],["match","sm","fm"])): match_search();
   if(match(prompt[0],["display","d"])): display('short');
   if(match(prompt[0],["displaybib","dbib"])): display('full');
   if(match(prompt[0],["quickdisplay","qd","ql","ls"])): display('quick');
