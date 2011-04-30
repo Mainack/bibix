@@ -5,6 +5,29 @@ listdb=dict();
 pdfdb=dict();
 current_list=[];
 
+def help():
+  print "import,i - ";
+  print "search,find,s,f - ";
+  print "match,sm,fm - ";
+  print "display,d - ";
+  print "displaybib,dbib - ";
+  print "quickdisplay,qd,ql,ls - ";
+  print "download,dl - ";
+  print "acmdownload,adl - ";
+  print "ieeedownload,idl - ";
+  print "open,o - ";
+  print "refine,r - ";
+  print "eliminate,elim - ";
+  print "showlists,show - ";
+  print "loadlist,load - ";
+  print "createlist,create - ";
+  print "deletelist,del - ";
+  print "addtolist,add - ";
+  print "removeitem,ri - ";
+  print "loadallpdfs,pdfs - ";
+  print "info - ";
+
+
 def info():
   print "size of bib database:\t",len(bibdb.keys());
 
@@ -48,7 +71,6 @@ def import_bib():
       if(cur_bib_info!=dict()): bibdb[key]=[cur_bib.copy(), cur_bib_info.copy()]; 
       cur_bib=dict(); cur_bib_info=dict(); 
       key=i.split('{')[1].split(',')[0];
-      if(bibdb.has_key(key)): continue;
       cur_bib_info['type']=i[1:].split('{')[0];
       cur_bib_info['citekey']=i.split('{')[1].split(',')[0];
       key=i.split('{')[1].split(',')[0];
@@ -122,7 +144,7 @@ def display(type):
     if(type=="quick"): show_bib_quick(current_list[i][1][0]);
     else: print ;
     if(type=="short"): show_bib_summary(current_list[i][1][0]);
-    if(type=="full"): show_bib_full(current_list[i][1][0]);
+    if(type=="full"): show_bib_full(current_list[i][1]);
     if(pdfdb.has_key(current_list[i][1][1]['citekey'])): 
       print "*pdf",
       filesize=sys.getsizeof(pdfdb[current_list[i][1][1]['citekey']])/(1024);
@@ -172,8 +194,10 @@ def show_bib_summary(bib):
   else: print ;
 
 def show_bib_full(bib):
-  for k,v in bib.items():
-    print k+":",v;
+  print "@"+bib[1]["type"]+"{"+bib[1]['citekey']+",";
+  for k,v in bib[0].items():
+    print " "+k+" = {"+v+"},";
+  print "}";
 
 
 def download():
@@ -336,8 +360,8 @@ def addtolist():
     i=int(i);
     key=current_list[i][1][1]['citekey'];
     listdb[prompt[1]]=list(set(listdb[prompt[1]]+[key]));
-  save_lists();
   print len(prompt[2:]),"entries added to list";
+  save_lists();
 
 def removeitem():
   global current_list;
@@ -361,10 +385,8 @@ def removeitem():
 def loadallpdfs():
   global current_list;
   current_list=[];
-  for i in bibdb.itervalues():
-    if(not pdfdb.has_key(i[1]['citekey'])): continue;
-    else:
-      current_list.append([0,i]);
+  for i in pdfdb.iterkeys():
+    current_list.append([0,bibdb[i]]);
   print "loaded",len(current_list),"entries";
 
 prompt=[0];
@@ -398,5 +420,6 @@ while(prompt[0]!='q' and prompt[0]!='quit'):
   if(match(prompt[0],["removeitem","ri"])): removeitem();
   if(match(prompt[0],["loadallpdfs","pdfs"])): loadallpdfs();
   if(match(prompt[0],["info"])): info();
+  if(match(prompt[0],["help","h"])): help();
 
 main_db.close();
