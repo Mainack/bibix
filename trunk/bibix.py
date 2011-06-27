@@ -130,9 +130,12 @@ def rank_bib(bib,query):
 def display(type):
   global current_list;
   low=0; high=len(current_list);
+  if(len(prompt)>1): 
+    if(is_int(prompt[1])):
+      low=int(prompt[1]); high=low+1;
   if(len(prompt)>2): 
-    if(is_int(prompt[1]) and is_int(prompt[2])):
-      low=int(prompt[1]); high=int(prompt[2]);
+    if(is_int(prompt[2])):
+      high=int(prompt[2]);
   if(low>high or low<0):return;
   if(low>len(current_list)):return;
   if(high>len(current_list)): high=len(current_list);
@@ -397,7 +400,7 @@ def match(inp, l):
   return 0;
 
 
-while(prompt[0]!='q' and prompt[0]!='quit'):
+while(prompt[0]!='q' and prompt[0]!='quit' and prompt[0]!='exit'):
   prompt=raw_input("--> ").split();
   if(not len(prompt)): prompt=[0];
   if(match(prompt[0],["import","i"])): import_bib();
